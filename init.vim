@@ -5,8 +5,9 @@ Plug 'dense-analysis/ale'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-fugitive'
 Plug 'rubixninja314/vim-mcfunction'
-
+Plug 'itchyny/lightline.vim'
 Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+
 let g:go_fmt_autosave = 1
 let g:go_fmt_command = "goimports"
 
@@ -21,8 +22,20 @@ let g:go_highlight_types = 1
 
 call plug#end()
 
+set laststatus=2
+let g:lightline = {
+      \ 'colorscheme': 'wombat',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'gitbranch', 'readonly', 'filename', 'modified' ] ]
+      \ },
+      \ 'component_function': {
+      \   'gitbranch': 'FugitiveHead'
+      \ },
+      \ }
+
+
 set sw=2 ts=2
-set laststatus=1
 syntax on
 filetype plugin indent on
 set autoindent smartindent
@@ -38,6 +51,7 @@ set modelines=0
 let mapleader = " "
 let maplocalleader = ","
 
+set background=dark
 colo delek
 
 nn <leader>w :w<cr>

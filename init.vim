@@ -7,6 +7,10 @@ Plug 'tpope/vim-fugitive'
 Plug 'rubixninja314/vim-mcfunction'
 Plug 'itchyny/lightline.vim'
 Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+Plug 'tpope/vim-surround'
+
+Plug 'junegunn/fzf'
+Plug 'junegunn/fzf.vim'
 
 let g:go_fmt_autosave = 1
 let g:go_fmt_command = "goimports"
@@ -53,6 +57,13 @@ let maplocalleader = ","
 
 set background=dark
 colo delek
+
+" Ripgrep
+set grepprg=rg\ --vimgrep\ --smart-case\ --hidden\ --follow
+let g:rg_derive_root='true'
+
+nn <leader>r :Rg<cr>
+
 
 nn <leader>w :w<cr>
 nn <leader>e :e<space>

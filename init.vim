@@ -14,10 +14,19 @@ Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
 Plug 'christoomey/vim-tmux-runner' " <-- literally jesus
 
+" Python completion
+Plug 'davidhalter/jedi-vim'
+Plug 'deoplete-plugins/deoplete-jedi'
+
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 
 call plug#end()
+
+" Configure python completion
+let g:jedi#completions_enabled = 0
+
+let g:deoplete#enable_at_startup = 1
 
 let g:ale_linters = {
 			\ 'javascriptreact': ['standard'],
@@ -67,7 +76,7 @@ let g:lightline = {
       \ }
 
 
-set sw=2 ts=2
+set sw=2 ts=2 et
 syntax on
 filetype plugin indent on
 set autoindent smartindent

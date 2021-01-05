@@ -20,6 +20,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}     " Intellisense
 Plug 'tpope/vim-commentary'                         " Comment stuff out with 'gc' and 'gcc'
 Plug 'sheerun/vim-polyglot'                         " Syntax highlighting and indentation
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } } " Fuzzy finder
+Plug 'junegunn/fzf.vim'
 
 " Themes
 Plug 'mhartington/oceanic-next'
@@ -47,6 +48,12 @@ let mapleader = " "
 
 " ========== Configure coc ==========
 " TODO
+"
+
+" ========== Configure ripgrep ==========
+if executable('rg')
+  set grepprg=rg\ --vimgrep\ --smart-case\ --hidden\ --follow
+endif
 
 " ========== Colorscheme ==========
 

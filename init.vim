@@ -22,6 +22,11 @@ Plug 'sheerun/vim-polyglot'                         " Syntax highlighting and in
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } } " Fuzzy finder
 Plug 'junegunn/fzf.vim'
 Plug 'antoinemadec/coc-fzf'
+Plug 'tpope/vim-surround'
+Plug 'luochen1990/rainbow'
+Plug 'lervag/vimtex'
+
+" Plug 'codota/tabnine-vim'
 
 " Themes
 Plug 'mhartington/oceanic-next'
@@ -30,6 +35,7 @@ Plug 'itchyny/lightline.vim'
 call plug#end()
 
 let g:mapleader = ' '
+let g:maplocalleader = ','
 
 " ========== Configure vim ===========
 
@@ -37,6 +43,7 @@ set sw=2 ts=2 et
 filetype plugin indent on
 set autoindent smartindent
 set ignorecase
+set number
 set hidden
 set mouse=a
 set splitbelow
@@ -46,6 +53,10 @@ set nomodeline
 set modelines=0
 
 let mapleader = " "
+
+" ========== Rainbow ===========
+let g:rainbow_active = 1
+
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim
@@ -96,6 +107,9 @@ function! s:show_documentation()
     execute '!' . &keywordprg . " " . expand('<cword>')
   endif
 endfunction
+
+" Imports on save
+autocmd BufWritePre *.go :silent call CocAction('runCommand', 'editor.action.organizeImport')
 
 " ========== Configure ripgrep ==========
 if executable('rg')

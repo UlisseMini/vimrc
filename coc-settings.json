@@ -8,5 +8,6 @@
 		"typescript",
 		"typescriptreact",
 		"rust"
-	]
+	],
+	"diagnostic.level": "warning"
 }

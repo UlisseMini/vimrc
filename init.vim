@@ -65,6 +65,9 @@ let g:rainbow_active = 1
 set nobackup
 set nowritebackup
 
+" https://parceljs.org/hmr.html#safe-write
+set backupcopy=yes
+
 " Give more space for displaying messages.
 set cmdheight=2
 

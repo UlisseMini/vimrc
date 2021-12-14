@@ -24,6 +24,7 @@ Plug 'junegunn/fzf.vim'
 Plug 'antoinemadec/coc-fzf'
 Plug 'tpope/vim-surround'
 Plug 'luochen1990/rainbow'
+Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'lervag/vimtex'
 
 " Plug 'codota/tabnine-vim'

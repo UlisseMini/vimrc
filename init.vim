@@ -25,12 +25,18 @@ Plug 'antoinemadec/coc-fzf'
 Plug 'tpope/vim-surround'
 Plug 'luochen1990/rainbow'
 Plug 'lervag/vimtex'
+Plug 'timmyjose-projects/lox.vim'
 
 " Plug 'codota/tabnine-vim'
 
 " Themes
 Plug 'mhartington/oceanic-next'
 Plug 'itchyny/lightline.vim'
+
+" Lean
+Plug 'Julian/lean.nvim'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'neovim/nvim-lspconfig'
 
 call plug#end()
 

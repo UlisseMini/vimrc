@@ -24,8 +24,9 @@ Plug 'junegunn/fzf.vim'
 Plug 'antoinemadec/coc-fzf'
 Plug 'tpope/vim-surround'
 Plug 'luochen1990/rainbow'
-Plug 'lervag/vimtex'
 Plug 'timmyjose-projects/lox.vim'
+Plug 'JuliaEditorSupport/julia-vim'
+" Plug 'lervag/vimtex'
 
 " Plug 'codota/tabnine-vim'
 
@@ -130,7 +131,8 @@ endif
 syntax on
 let g:oceanic_next_terminal_bold = 1
 let g:oceanic_next_terminal_italic = 1
-silent! colorscheme OceanicNext
+" silent! colorscheme OceanicNext
+silent! colorscheme delek
 
 " ========== Keybindings ==========
 

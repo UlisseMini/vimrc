@@ -27,7 +27,7 @@ Plug 'luochen1990/rainbow'
 Plug 'timmyjose-projects/lox.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 Plug 'lervag/vimtex'
-Plug 'jxnblk/vim-mdx-js'
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 
 " Plug 'codota/tabnine-vim'
 
@@ -95,9 +95,12 @@ nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
 
+" Code actions (ie. auto import / quickfix)
+nmap <leader>ca <Plug>(coc-codeaction)
+
 
 " Symbol renaming.
-nmap <leader>rn <Plug>(coc-rename)
+nmap <leader>cr <Plug>(coc-rename)
 
   " Update signature help on jump placeholder.
 " Use `[g` and `]g` to navigate diagnostics

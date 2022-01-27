@@ -26,8 +26,9 @@ Plug 'tpope/vim-surround'
 Plug 'luochen1990/rainbow'
 Plug 'timmyjose-projects/lox.vim'
 Plug 'JuliaEditorSupport/julia-vim'
-" Plug 'lervag/vimtex'
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
+Plug 'lervag/vimtex'
+Plug 'jxnblk/vim-mdx-js'
 
 " Plug 'codota/tabnine-vim'
 
@@ -55,6 +56,9 @@ set number
 set hidden
 set mouse=a
 set splitbelow
+
+set undodir=~/.config/nvim/undodir
+set undofile
 
 " security
 set nomodeline
@@ -135,8 +139,8 @@ endif
 syntax on
 let g:oceanic_next_terminal_bold = 1
 let g:oceanic_next_terminal_italic = 1
-" silent! colorscheme OceanicNext
-silent! colorscheme delek
+silent! colorscheme OceanicNext
+" silent! colorscheme delek
 
 " ========== Keybindings ==========
 

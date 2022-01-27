@@ -77,6 +77,12 @@ function OpenBrowser(url)
 endfunction
 let g:mkdp_browserfunc = "OpenBrowser"
 
+" set to 1, the vim will refresh markdown when save the buffer or
+" leave from insert mode, default 0 is auto refresh markdown as you edit or
+" move the cursor
+" default: 0
+let g:mkdp_refresh_slow = 1
+
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim
 

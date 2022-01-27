@@ -28,7 +28,6 @@ Plug 'timmyjose-projects/lox.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 Plug 'lervag/vimtex'
-Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 
 " Plug 'codota/tabnine-vim'
 

@@ -70,9 +70,12 @@ let mapleader = " "
 let g:rainbow_active = 1
 
 " ========== Markdown Preview ===========
-" browser is a script in my $PATH that runs firefox --new-window "$@"
-" TODO: Use mkdp:browserfunc to get rid of external dependancy
-let g:mkdp_browser = "browser"
+
+" Make markdown preview open url in a new window
+function OpenBrowser(url)
+  execute "!firefox --new-window " . a:url
+endfunction
+let g:mkdp_browserfunc = "OpenBrowser"
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim

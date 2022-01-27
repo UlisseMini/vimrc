@@ -71,10 +71,10 @@ let g:rainbow_active = 1
 " ========== Markdown Preview ===========
 
 " Make markdown preview open url in a new window
-function OpenBrowser(url)
-  execute "!firefox --new-window " . a:url
-endfunction
-let g:mkdp_browserfunc = "OpenBrowser"
+" function OpenBrowser(url)
+"   execute "!firefox --new-window " . a:url
+" endfunction
+" let g:mkdp_browserfunc = "OpenBrowser"
 
 " set to 1, the vim will refresh markdown when save the buffer or
 " leave from insert mode, default 0 is auto refresh markdown as you edit or

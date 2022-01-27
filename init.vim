@@ -27,6 +27,7 @@ Plug 'luochen1990/rainbow'
 Plug 'timmyjose-projects/lox.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'lervag/vimtex'
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 
 " Plug 'codota/tabnine-vim'
 
@@ -64,6 +65,9 @@ let mapleader = " "
 " ========== Rainbow ===========
 let g:rainbow_active = 1
 
+" ========== Markdown Preview ===========
+" browser is a script in my $PATH that runs firefox --new-window "$@"
+let g:mkdp_browser = "browser"
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim

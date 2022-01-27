@@ -26,6 +26,7 @@ Plug 'tpope/vim-surround'
 Plug 'luochen1990/rainbow'
 Plug 'timmyjose-projects/lox.vim'
 Plug 'JuliaEditorSupport/julia-vim'
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 Plug 'lervag/vimtex'
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 
@@ -68,6 +69,19 @@ let mapleader = " "
 " ========== Rainbow ===========
 let g:rainbow_active = 1
 
+" ========== Markdown Preview ===========
+
+" Make markdown preview open url in a new window
+function OpenBrowser(url)
+  execute "!firefox --new-window " . a:url
+endfunction
+let g:mkdp_browserfunc = "OpenBrowser"
+
+" set to 1, the vim will refresh markdown when save the buffer or
+" leave from insert mode, default 0 is auto refresh markdown as you edit or
+" move the cursor
+" default: 0
+let g:mkdp_refresh_slow = 1
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim

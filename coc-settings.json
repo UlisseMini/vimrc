@@ -7,7 +7,9 @@
 		"javascriptreact",
 		"typescript",
 		"typescriptreact",
-		"rust"
+		"rust",
+		"svelte"
 	],
-	"diagnostic.level": "warning"
+  "diagnostic.level": "warning",
+  "svelte.enable-ts-plugin": true
 }

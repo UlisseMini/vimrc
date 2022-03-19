@@ -29,6 +29,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 Plug 'lervag/vimtex'
 Plug 'jxnblk/vim-mdx-js'
+Plug 'leafOfTree/vim-svelte-plugin'
 
 " Plug 'codota/tabnine-vim'
 
@@ -85,6 +86,10 @@ let g:mkdp_refresh_slow = 1
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim
+
+" Svelte
+let g:vim_svelte_plugin_load_full_syntax = 1
+let g:vim_svelte_plugin_use_typescript = 1
 
 " Some servers have issues with backup files, see #649.
 set nobackup

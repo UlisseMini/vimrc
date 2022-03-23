@@ -30,6 +30,7 @@ Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 Plug 'lervag/vimtex'
 Plug 'jxnblk/vim-mdx-js'
 Plug 'leafOfTree/vim-svelte-plugin'
+Plug 'ferrine/md-img-paste.vim'
 
 " Plug 'codota/tabnine-vim'
 
@@ -83,6 +84,12 @@ let g:rainbow_active = 1
 " move the cursor
 " default: 0
 let g:mkdp_refresh_slow = 1
+
+" ========== Markdown image paste ========== 
+
+autocmd FileType markdown nmap <buffer><silent> <leader>mp :call mdip#MarkdownClipboardImage()<CR>
+let g:mdip_imgdir = '.'
+" let g:mdip_imgname = 'image'
 
 " ========== Configure coc ==========
 " TODO: Configure more stuff https://github.com/neoclide/coc.nvim

@@ -36,6 +36,7 @@ Plug 'ferrine/md-img-paste.vim'
 
 " Themes
 Plug 'mhartington/oceanic-next'
+Plug 'NLKNguyen/papercolor-theme'
 Plug 'itchyny/lightline.vim'
 
 " Lean
@@ -164,7 +165,8 @@ endif
 syntax on
 let g:oceanic_next_terminal_bold = 1
 let g:oceanic_next_terminal_italic = 1
-silent! colorscheme OceanicNext
+set background=dark
+silent! colorscheme PaperColor
 " silent! colorscheme delek
 
 " ========== Keybindings ==========
@@ -177,3 +179,7 @@ nn <leader>w :w<cr>
 nn <leader>e :e<space>
 nn <leader>n :bn<cr>
 nn <leader>p :bp<cr>
+
+" manim
+nn <leader>mp :!manim -pqm % <cword><cr>
+nn <leader>ms :!manim -psqm % <cword><cr>

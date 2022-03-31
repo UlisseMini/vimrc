@@ -10,6 +10,5 @@
 		"rust",
 		"svelte"
 	],
-  "diagnostic.level": "warning",
   "svelte.enable-ts-plugin": true
 }

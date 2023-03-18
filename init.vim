@@ -31,6 +31,7 @@ Plug 'lervag/vimtex'
 Plug 'jxnblk/vim-mdx-js'
 Plug 'leafOfTree/vim-svelte-plugin'
 Plug 'ferrine/md-img-paste.vim'
+Plug 'github/copilot.vim'
 
 " Plug 'codota/tabnine-vim'
 
@@ -56,6 +57,7 @@ filetype plugin indent on
 set autoindent smartindent
 set ignorecase
 set number
+set relativenumber
 set hidden
 set mouse=a
 set splitbelow

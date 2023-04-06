@@ -32,6 +32,8 @@ Plug 'jxnblk/vim-mdx-js'
 Plug 'leafOfTree/vim-svelte-plugin'
 Plug 'ferrine/md-img-paste.vim'
 Plug 'github/copilot.vim'
+Plug 'easymotion/vim-easymotion'
+Plug 'UlisseMini/gruvbox'
 
 " Plug 'codota/tabnine-vim'
 
@@ -168,7 +170,8 @@ syntax on
 let g:oceanic_next_terminal_bold = 1
 let g:oceanic_next_terminal_italic = 1
 set background=dark
-silent! colorscheme PaperColor
+silent! colorscheme gruvbox
+" silent! colorscheme PaperColor
 " silent! colorscheme delek
 
 " ========== Keybindings ==========

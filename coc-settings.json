@@ -8,7 +8,9 @@
 		"typescript",
 		"typescriptreact",
 		"rust",
-		"svelte"
+		"svelte",
+		"python"
 	],
-  "svelte.enable-ts-plugin": true
+	"svelte.enable-ts-plugin": true,
+	"python.formatting.provider": "black"
 }

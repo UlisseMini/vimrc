@@ -3,8 +3,6 @@
 		"css",
 		"markdown",
 		"Markdown",
-		"javascript",
-		"javascriptreact",
 		"typescript",
 		"typescriptreact",
 		"rust",
@@ -12,5 +10,15 @@
 		"python"
 	],
 	"svelte.enable-ts-plugin": true,
-	"python.formatting.provider": "black"
+	"python.formatting.provider": "black",
+	"languageserver": {
+		"swift": {
+			"command": "sourcekit-lsp",
+			"args": [],
+			"filetypes": ["swift"],
+			"initializationOptions": {},
+			"settings": {
+			}
+		}
+	}
 }

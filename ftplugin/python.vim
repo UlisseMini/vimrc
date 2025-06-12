@@ -1,1 +1,1 @@
-nn <space>r :!python3 -u %<cr>
+nn <space>r :!python -u %<cr>

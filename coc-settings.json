@@ -3,12 +3,21 @@
 		"css",
 		"markdown",
 		"Markdown",
-		"javascript",
-		"javascriptreact",
 		"typescript",
 		"typescriptreact",
 		"rust",
 		"svelte"
 	],
-  "svelte.enable-ts-plugin": true
+  "svelte.enable-ts-plugin": true,
+	"languageserver": {
+		"swift": {
+			"command": "sourcekit-lsp",
+			"args": [],
+			"filetypes": ["swift"],
+			"initializationOptions": {},
+			"settings": {
+			}
+		}
+	}
+
 }

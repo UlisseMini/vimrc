@@ -58,6 +58,72 @@ end
 
 vim.env.FZF_DEFAULT_COMMAND = "rg --files --follow"
 
+-- Python provider venv for Neovim remote plugins like molten-nvim
+local nvim_python_venv = vim.fn.expand("~/.venvs/neovim")
+local nvim_python = nvim_python_venv .. "/bin/python"
+
+local function ensure_nvim_python_venv()
+	if vim.fn.executable(nvim_python) == 1 then
+		vim.g.python3_host_prog = nvim_python
+		return
+	end
+
+	local python3 = vim.fn.exepath("python3")
+
+	if python3 == "" then
+		vim.notify("python3 not found; cannot create Neovim Python provider venv", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.notify("Creating Neovim Python provider venv at " .. nvim_python_venv, vim.log.levels.INFO)
+
+	vim.fn.system({
+		python3,
+		"-m",
+		"venv",
+		nvim_python_venv,
+	})
+
+	if vim.v.shell_error ~= 0 then
+		vim.notify("Failed to create Neovim Python provider venv", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.fn.system({
+		nvim_python,
+		"-m",
+		"pip",
+		"install",
+		"--upgrade",
+		"pip",
+	})
+
+	vim.fn.system({
+		nvim_python,
+		"-m",
+		"pip",
+		"install",
+		"pynvim",
+		"jupyter_client",
+		"cairosvg",
+		"plotly",
+		"kaleido",
+		"pnglatex",
+		"pyperclip",
+	})
+
+	if vim.v.shell_error ~= 0 then
+		vim.notify("Failed to install Neovim Python provider packages", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.g.python3_host_prog = nvim_python
+
+	vim.notify("Neovim Python provider venv ready. Restart nvim, then run :UpdateRemotePlugins", vim.log.levels.INFO)
+end
+
+ensure_nvim_python_venv()
+
 -- Plugins
 require("lazy").setup({
 	{
@@ -230,7 +296,7 @@ require("lazy").setup({
 
 	{
 		"stevearc/conform.nvim",
-		event = { "BufWritePre" },
+		event = { "VeryLazy" },
 		cmd = { "ConformInfo" },
 		opts = {
 			formatters_by_ft = {
@@ -342,6 +408,82 @@ require("lazy").setup({
 	},
 
 	{
+		"benlubas/molten-nvim",
+		-- version = "^1.0.0",
+		build = ":UpdateRemotePlugins",
+		init = function()
+			vim.g.molten_image_provider = "image.nvim"
+
+			-- Important: stop output windows from appearing/disappearing while navigating.
+			vim.g.molten_auto_open_output = false
+
+			-- Keep text output visible without opening the floating output window.
+			vim.g.molten_virt_text_output = true
+			vim.g.molten_virt_lines_off_by_1 = true
+			vim.g.molten_wrap_output = true
+		end,
+	},
+
+	{
+		"3rd/image.nvim",
+		opts = {
+			backend = "kitty",
+			integrations = {
+				markdown = {
+					enabled = true,
+				},
+			},
+			max_width = 100,
+			max_height = 20,
+			max_height_window_percentage = 50,
+			max_width_window_percentage = 80,
+			window_overlap_clear_enabled = true,
+		},
+	},
+
+	{
+		"GCBallesteros/NotebookNavigator.nvim",
+		dependencies = {
+			"echasnovski/mini.comment",
+			"benlubas/molten-nvim",
+		},
+		event = "VeryLazy",
+		opts = {
+			activate_hydra_keys = nil,
+		},
+		keys = {
+			{
+				"]h",
+				function()
+					require("notebook-navigator").move_cell("d")
+				end,
+				desc = "Next notebook cell",
+			},
+			{
+				"[h",
+				function()
+					require("notebook-navigator").move_cell("u")
+				end,
+				desc = "Previous notebook cell",
+			},
+			{
+				"<leader>x",
+				function()
+					require("notebook-navigator").run_cell()
+				end,
+				desc = "Run notebook cell",
+			},
+			{
+				"<leader>X",
+				function()
+					require("notebook-navigator").run_and_move()
+				end,
+				desc = "Run notebook cell and move",
+			},
+		},
+	},
+
+	{
 		"mhartington/oceanic-next",
 		lazy = false,
 		priority = 1000,
@@ -382,9 +524,13 @@ map("n", "<leader>e", ":e ", { silent = false })
 map("n", "<leader>n", "<cmd>bn<cr>", { silent = true })
 map("n", "<leader>p", "<cmd>bp<cr>", { silent = true })
 
--- manim
-map("n", "<leader>mp", "<cmd>!manim -pqm % <cword><cr>", { silent = true })
-map("n", "<leader>ms", "<cmd>!manim -psqm % <cword><cr>", { silent = true })
+-- Molten
+map("n", "<leader>mi", "<cmd>MoltenInit<cr>", { silent = true })
+map("n", "<leader>mo", "<cmd>noautocmd MoltenEnterOutput<cr>", { silent = true })
+map("n", "<leader>mh", "<cmd>MoltenHideOutput<cr>", { silent = true })
+map("n", "<leader>md", "<cmd>MoltenDelete<cr>", { silent = true })
+map("n", "<leader>mr", "<cmd>MoltenRestart<cr>", { silent = true })
+map("n", "<leader>mc", "<cmd>MoltenDelete!<cr>", { silent = true })
 
 -- Autocmds
 vim.api.nvim_create_autocmd("FileType", {

@@ -1,0 +1,416 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  remote-molten-kernel start <ssh-remote> <venv-path> [workdir]
+  remote-molten-kernel interrupt-session <local-kernel-json>
+  remote-molten-kernel stop-session <local-kernel-json>
+  remote-molten-kernel stop-all <ssh-remote> <venv-path> [workdir]
+  remote-molten-kernel list
+  remote-molten-kernel latest
+  remote-molten-kernel exec <local-kernel-json|latest> [code]
+
+Example:
+  remote-molten-kernel start ubuntu@mithril-17 /home/ubuntu/si/.venv /home/ubuntu/si
+  remote-molten-kernel exec latest 'print("hello from the shared kernel")'
+EOF
+}
+
+slugify() {
+  printf '%s' "$1" | tr -c 'A-Za-z0-9_.-' '_'
+}
+
+shell_quote() {
+  printf '%q' "$1"
+}
+
+state_root="${XDG_RUNTIME_DIR:-/tmp}/nvim-remote-kernels"
+
+command=${1:-}
+if [[ -z "$command" ]]; then
+  usage
+  exit 2
+fi
+shift
+
+stop_local_tunnel() {
+  local session_dir=$1
+  local tunnel_pid_file="$session_dir/tunnel.pid"
+
+  if [[ -f "$tunnel_pid_file" ]]; then
+    local pid
+    pid=$(cat "$tunnel_pid_file")
+    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null || true
+    fi
+    rm -f "$tunnel_pid_file"
+  fi
+}
+
+remote_signal_session() {
+  local session_dir=$1
+  local signal=$2
+
+  local remote
+  local remote_pid
+  remote=$(cat "$session_dir/remote")
+  remote_pid=$(cat "$session_dir/remote-kernel.pid")
+
+  ssh "$remote" "REMOTE_PID=$(shell_quote "$remote_pid") SIGNAL=$(shell_quote "$signal") bash -s" <<'REMOTE'
+set -euo pipefail
+if [[ -n "$REMOTE_PID" ]] && kill -0 "$REMOTE_PID" 2>/dev/null; then
+  kill "-$SIGNAL" "$REMOTE_PID" 2>/dev/null || true
+fi
+REMOTE
+}
+
+remote_stop_session() {
+  local session_dir=$1
+
+  local remote
+  local remote_pid
+  local remote_json
+  local remote_pid_file
+  remote=$(cat "$session_dir/remote")
+  remote_pid=$(cat "$session_dir/remote-kernel.pid")
+  remote_json=$(cat "$session_dir/remote-json")
+  remote_pid_file=$(cat "$session_dir/remote-pid-file")
+
+  ssh "$remote" \
+    "REMOTE_PID=$(shell_quote "$remote_pid") JSON=$(shell_quote "$remote_json") PID_FILE=$(shell_quote "$remote_pid_file") bash -s" <<'REMOTE'
+set -euo pipefail
+if [[ -n "$REMOTE_PID" ]] && kill -0 "$REMOTE_PID" 2>/dev/null; then
+  kill "$REMOTE_PID" 2>/dev/null || true
+fi
+rm -f "$JSON" "$PID_FILE"
+REMOTE
+}
+
+session_dir_from_json() {
+  local kernel_json=$1
+  local session_dir
+  session_dir=$(cd "$(dirname "$kernel_json")" && pwd)
+
+  if [[ ! -f "$session_dir/remote" || ! -f "$session_dir/remote-kernel.pid" ]]; then
+    echo "Not a remote Molten session file: $kernel_json" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$session_dir"
+}
+
+latest_kernel_json() {
+  local latest
+  latest=$(find "$state_root" -path '*/sessions/*/kernel.json' -type f -print 2>/dev/null | xargs ls -t 2>/dev/null | sed -n '1p')
+
+  if [[ -z "$latest" ]]; then
+    echo "No remote Molten sessions found" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$latest"
+}
+
+resolve_kernel_json() {
+  local kernel_json=$1
+
+  if [[ "$kernel_json" == "latest" ]]; then
+    latest_kernel_json
+    return
+  fi
+
+  printf '%s\n' "$kernel_json"
+}
+
+python_for_jupyter_client() {
+  if [[ -n "${NVIM_PYTHON:-}" ]]; then
+    printf '%s\n' "$NVIM_PYTHON"
+  elif [[ -x "$HOME/.venvs/neovim/bin/python" ]]; then
+    printf '%s\n' "$HOME/.venvs/neovim/bin/python"
+  else
+    printf '%s\n' "python3"
+  fi
+}
+
+build_env_payload() {
+  local tmp
+  tmp=$(mktemp)
+
+  if [[ -f "$HOME/s.bashrc" ]]; then
+    cat "$HOME/s.bashrc" >>"$tmp"
+    printf '\n' >>"$tmp"
+  fi
+
+  if [[ -f "$HOME/.env" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ -n "${line//[[:space:]]/}" ]] || continue
+      [[ "$line" != \#* ]] || continue
+      printf 'export %s\n' "$line" >>"$tmp"
+    done <"$HOME/.env"
+  fi
+
+  if [[ -s "$tmp" ]]; then
+    base64 <"$tmp" | tr -d '\n'
+  fi
+
+  rm -f "$tmp"
+}
+
+case "$command" in
+  start)
+    if [[ $# -lt 2 || $# -gt 3 ]]; then
+      usage
+      exit 2
+    fi
+
+    remote=$1
+    venv=$2
+    workdir=${3:-$(dirname "$venv")}
+    name=$(slugify "$remote:$workdir")
+    session_id="$(date +%Y%m%d-%H%M%S)-$$-$RANDOM"
+    session_dir="$state_root/$name/sessions/$session_id"
+    local_json="$session_dir/kernel.json"
+    tunnel_pid_file="$session_dir/tunnel.pid"
+    tunnel_log="$session_dir/tunnel.log"
+
+    remote_json="/tmp/nvim-molten-${name}-${session_id}.json"
+    remote_pid_file="/tmp/nvim-molten-${name}-${session_id}.pid"
+    remote_log="/tmp/nvim-molten-${name}-${session_id}.log"
+
+    mkdir -p "$session_dir"
+    env_payload=$(build_env_payload)
+
+    remote_output=$(
+      ssh "$remote" \
+        "VENV=$(shell_quote "$venv") WORKDIR=$(shell_quote "$workdir") JSON=$(shell_quote "$remote_json") PID_FILE=$(shell_quote "$remote_pid_file") LOG=$(shell_quote "$remote_log") ENV_PAYLOAD=$(shell_quote "$env_payload") bash -s" <<'REMOTE'
+set -euo pipefail
+rm -f "$JSON" "$PID_FILE"
+mkdir -p "$(dirname "$JSON")"
+if [[ -n "$ENV_PAYLOAD" ]]; then
+  source <(base64 -d <<< "$ENV_PAYLOAD")
+fi
+cd "$WORKDIR"
+nohup "$VENV/bin/python" -m ipykernel_launcher -f "$JSON" >"$LOG" 2>&1 &
+pid=$!
+echo "$pid" >"$PID_FILE"
+
+for _ in $(seq 1 100); do
+  if [[ -s "$JSON" ]]; then
+    printf '%s\n' "$pid"
+    cat "$JSON"
+    exit 0
+  fi
+
+  if ! kill -0 "$pid" 2>/dev/null; then
+    echo "Remote kernel exited before writing $JSON. Remote log:" >&2
+    sed -n '1,120p' "$LOG" >&2 || true
+    exit 1
+  fi
+
+  sleep 0.1
+done
+
+echo "Timed out waiting for remote kernel connection file: $JSON" >&2
+echo "Remote log:" >&2
+sed -n '1,120p' "$LOG" >&2 || true
+exit 1
+REMOTE
+    )
+
+    remote_kernel_pid=$(printf '%s\n' "$remote_output" | sed -n '1p')
+    connection_json=$(printf '%s\n' "$remote_output" | sed '1d')
+
+    printf '%s\n' "$connection_json" >"$local_json"
+    printf '%s\n' "$remote" >"$session_dir/remote"
+    printf '%s\n' "$venv" >"$session_dir/venv"
+    printf '%s\n' "$workdir" >"$session_dir/workdir"
+    printf '%s\n' "$remote_kernel_pid" >"$session_dir/remote-kernel.pid"
+    printf '%s\n' "$remote_json" >"$session_dir/remote-json"
+    printf '%s\n' "$remote_pid_file" >"$session_dir/remote-pid-file"
+    printf '%s\n' "$remote_log" >"$session_dir/remote-log"
+
+    shell_port=$(jq -r '.shell_port' "$local_json")
+    iopub_port=$(jq -r '.iopub_port' "$local_json")
+    stdin_port=$(jq -r '.stdin_port' "$local_json")
+    control_port=$(jq -r '.control_port' "$local_json")
+    hb_port=$(jq -r '.hb_port' "$local_json")
+
+    ssh -N \
+      -o ExitOnForwardFailure=yes \
+      -L "${shell_port}:127.0.0.1:${shell_port}" \
+      -L "${iopub_port}:127.0.0.1:${iopub_port}" \
+      -L "${stdin_port}:127.0.0.1:${stdin_port}" \
+      -L "${control_port}:127.0.0.1:${control_port}" \
+      -L "${hb_port}:127.0.0.1:${hb_port}" \
+      "$remote" >"$tunnel_log" 2>&1 &
+    tunnel_pid=$!
+
+    sleep 0.3
+    if ! kill -0 "$tunnel_pid" 2>/dev/null; then
+      echo "SSH tunnel failed. Local tunnel log:" >&2
+      sed -n '1,120p' "$tunnel_log" >&2 || true
+      remote_stop_session "$session_dir" || true
+      exit 1
+    fi
+
+    echo "$tunnel_pid" >"$tunnel_pid_file"
+    printf '%s\n' "$local_json"
+    ;;
+
+  interrupt-session)
+    if [[ $# -ne 1 ]]; then
+      usage
+      exit 2
+    fi
+
+    session_dir=$(session_dir_from_json "$1")
+    remote_signal_session "$session_dir" INT
+    ;;
+
+  stop-session)
+    if [[ $# -ne 1 ]]; then
+      usage
+      exit 2
+    fi
+
+    session_dir=$(session_dir_from_json "$1")
+    stop_local_tunnel "$session_dir"
+    remote_stop_session "$session_dir"
+    rm -rf "$session_dir"
+    ;;
+
+  stop-all)
+    if [[ $# -lt 2 || $# -gt 3 ]]; then
+      usage
+      exit 2
+    fi
+
+    remote=$1
+    venv=$2
+    workdir=${3:-$(dirname "$venv")}
+    name=$(slugify "$remote:$workdir")
+    sessions_dir="$state_root/$name/sessions"
+
+    if [[ ! -d "$sessions_dir" ]]; then
+      exit 0
+    fi
+
+    for session_dir in "$sessions_dir"/*; do
+      [[ -d "$session_dir" ]] || continue
+      stop_local_tunnel "$session_dir"
+      remote_stop_session "$session_dir" || true
+      rm -rf "$session_dir"
+    done
+    ;;
+
+  list)
+    if [[ $# -ne 0 ]]; then
+      usage
+      exit 2
+    fi
+
+    printf 'kernel_json\tremote\tworkdir\tremote_pid\n'
+    find "$state_root" -path '*/sessions/*/kernel.json' -type f -print 2>/dev/null | sort | while IFS= read -r kernel_json; do
+      session_dir=$(dirname "$kernel_json")
+      remote=$(cat "$session_dir/remote" 2>/dev/null || true)
+      workdir=$(cat "$session_dir/workdir" 2>/dev/null || true)
+      remote_pid=$(cat "$session_dir/remote-kernel.pid" 2>/dev/null || true)
+      printf '%s\t%s\t%s\t%s\n' "$kernel_json" "$remote" "$workdir" "$remote_pid"
+    done
+    ;;
+
+  latest)
+    if [[ $# -ne 0 ]]; then
+      usage
+      exit 2
+    fi
+
+    latest_kernel_json
+    ;;
+
+  exec)
+    if [[ $# -lt 1 ]]; then
+      usage
+      exit 2
+    fi
+
+    kernel_json=$(resolve_kernel_json "$1")
+    shift
+    session_dir_from_json "$kernel_json" >/dev/null
+
+    if [[ $# -gt 0 ]]; then
+      code="$*"
+    else
+      code=$(cat)
+    fi
+
+    if [[ -z "$code" ]]; then
+      echo "No code provided" >&2
+      exit 2
+    fi
+
+    JUPYTER_KERNEL_JSON="$kernel_json" JUPYTER_CODE="$code" "$(python_for_jupyter_client)" <<'PY'
+import os
+import sys
+import time
+from queue import Empty
+
+from jupyter_client import BlockingKernelClient
+
+kernel_json = os.environ["JUPYTER_KERNEL_JSON"]
+code = os.environ["JUPYTER_CODE"]
+
+client = BlockingKernelClient()
+client.load_connection_file(kernel_json)
+client.start_channels()
+
+try:
+    msg_id = client.execute(code)
+    deadline = time.monotonic() + 120
+    shell_done = False
+
+    while time.monotonic() < deadline:
+        try:
+            msg = client.get_iopub_msg(timeout=0.2)
+        except Empty:
+            if shell_done:
+                break
+            continue
+
+        if msg.get("parent_header", {}).get("msg_id") != msg_id:
+            continue
+
+        msg_type = msg["header"]["msg_type"]
+        content = msg["content"]
+
+        if msg_type == "stream":
+            target = sys.stderr if content.get("name") == "stderr" else sys.stdout
+            target.write(content.get("text", ""))
+            target.flush()
+        elif msg_type in {"execute_result", "display_data"}:
+            data = content.get("data", {})
+            if "text/plain" in data:
+                print(data["text/plain"])
+        elif msg_type == "error":
+            print("\n".join(content.get("traceback", [])), file=sys.stderr)
+
+        if msg_type == "status" and content.get("execution_state") == "idle":
+            shell_done = True
+            break
+
+    reply = client.get_shell_msg(timeout=5)
+    status = reply.get("content", {}).get("status")
+    if status != "ok":
+        sys.exit(1)
+finally:
+    client.stop_channels()
+PY
+    ;;
+
+  *)
+    usage
+    exit 2
+    ;;
+esac

@@ -32,6 +32,7 @@ vim.opt.smartcase = true
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.hidden = true
+vim.opt.autoread = true
 vim.opt.mouse = "a"
 vim.opt.splitbelow = true
 
@@ -186,7 +187,7 @@ require("lazy").setup({
 		},
 		opts = {
 			ensure_installed = {
-				"pyright",
+				"basedpyright",
 				"ruff",
 			},
 			automatic_enable = false,
@@ -207,25 +208,8 @@ require("lazy").setup({
 				capabilities = require("blink.cmp").get_lsp_capabilities(),
 			})
 
-			vim.lsp.config("pyright", {
-				settings = {
-					pyright = {
-						disableOrganizeImports = true,
-					},
-					python = {
-						analysis = {
-							typeCheckingMode = "basic",
-							autoSearchPaths = true,
-							useLibraryCodeForTypes = true,
-						},
-					},
-				},
-			})
-
-			vim.lsp.config("ruff", {
-				init_options = {
-					settings = {},
-				},
+			vim.lsp.config("basedpyright", {
+				cmd = { "uv", "run", "basedpyright-langserver", "--stdio" },
 			})
 
 			vim.api.nvim_create_autocmd("LspAttach", {
@@ -288,7 +272,7 @@ require("lazy").setup({
 			})
 
 			vim.lsp.enable({
-				"pyright",
+				"basedpyright",
 				"ruff",
 			})
 		end,
@@ -532,7 +516,125 @@ map("n", "<leader>md", "<cmd>MoltenDelete<cr>", { silent = true })
 map("n", "<leader>mr", "<cmd>MoltenRestart<cr>", { silent = true })
 map("n", "<leader>mc", "<cmd>MoltenDelete!<cr>", { silent = true })
 
+local remote_molten_script = vim.fn.stdpath("config") .. "/scripts/remote-molten-kernel"
+
+local function remote_molten_select_current(callback)
+	local ok, kernels = pcall(vim.fn.MoltenRunningKernels, true)
+
+	if not ok or kernels == nil or vim.tbl_isempty(kernels) then
+		vim.notify("No Molten kernel is attached to this buffer", vim.log.levels.ERROR)
+		return
+	end
+
+	if #kernels == 1 then
+		callback(kernels[1])
+		return
+	end
+
+	vim.ui.select(kernels, { prompt = "Remote Molten kernel:" }, function(kernel)
+		if kernel then
+			callback(kernel)
+		end
+	end)
+end
+
+local function remote_molten_run_current(action, label)
+	remote_molten_select_current(function(kernel)
+		vim.system({ remote_molten_script, action, kernel }, { text = true }, function(result)
+			vim.schedule(function()
+				if result.code ~= 0 then
+					vim.notify(vim.trim(result.stderr), vim.log.levels.ERROR)
+					return
+				end
+
+				vim.notify(label .. " remote Molten kernel", vim.log.levels.INFO)
+			end)
+		end)
+	end)
+end
+
+vim.api.nvim_create_user_command("RemoteMoltenStart", function(opts)
+	local args = opts.fargs
+
+	if #args < 2 then
+		vim.notify("Usage: RemoteMoltenStart <ssh-remote> <venv-path> [workdir]", vim.log.levels.ERROR)
+		return
+	end
+
+	local cmd = { remote_molten_script, "start", args[1], args[2] }
+	if args[3] then
+		table.insert(cmd, args[3])
+	end
+
+	vim.notify("Starting remote Molten kernel on " .. args[1], vim.log.levels.INFO)
+
+	vim.system(cmd, { text = true }, function(result)
+		vim.schedule(function()
+			if result.code ~= 0 then
+				vim.notify(vim.trim(result.stderr), vim.log.levels.ERROR)
+				return
+			end
+
+			local connection_file = vim.trim(result.stdout)
+			if connection_file == "" then
+				vim.notify("Remote Molten helper did not return a connection file", vim.log.levels.ERROR)
+				return
+			end
+
+			vim.cmd("MoltenInit " .. vim.fn.fnameescape(connection_file))
+			vim.notify("Connected Molten to " .. args[1], vim.log.levels.INFO)
+		end)
+	end)
+end, { nargs = "+" })
+
+vim.api.nvim_create_user_command("RemoteMoltenInterruptCurrent", function()
+	remote_molten_run_current("interrupt-session", "Interrupted")
+end, {})
+
+vim.api.nvim_create_user_command("RemoteMoltenStopCurrent", function()
+	remote_molten_run_current("stop-session", "Stopped")
+end, {})
+
+vim.api.nvim_create_user_command("RemoteMoltenStopAll", function(opts)
+	local args = opts.fargs
+
+	if #args < 2 then
+		vim.notify("Usage: RemoteMoltenStopAll <ssh-remote> <venv-path> [workdir]", vim.log.levels.ERROR)
+		return
+	end
+
+	local cmd = { remote_molten_script, "stop-all", args[1], args[2] }
+	if args[3] then
+		table.insert(cmd, args[3])
+	end
+
+	vim.system(cmd, { text = true }, function(result)
+		vim.schedule(function()
+			if result.code ~= 0 then
+				vim.notify(vim.trim(result.stderr), vim.log.levels.ERROR)
+				return
+			end
+
+			vim.notify("Stopped remote Molten kernels on " .. args[1], vim.log.levels.INFO)
+		end)
+	end)
+end, { nargs = "+" })
+
 -- Autocmds
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+	callback = function()
+		if vim.fn.mode() ~= "c" then
+			vim.cmd("checktime")
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+	callback = function()
+		vim.notify("Reloaded file changed on disk", vim.log.levels.INFO)
+	end,
+})
+
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "markdown",
 	callback = function(args)

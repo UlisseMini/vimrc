@@ -503,6 +503,10 @@ map("n", "<leader>f", function()
 	require("fzf-lua").files()
 end, { silent = true })
 
+map("n", "<leader>:", function()
+	require("fzf-lua").command_history()
+end, { silent = true })
+
 map("n", "<leader>w", "<cmd>w<cr>", { silent = true })
 map("n", "<leader>e", ":e ", { silent = false })
 map("n", "<leader>n", "<cmd>bn<cr>", { silent = true })

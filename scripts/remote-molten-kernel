@@ -189,7 +189,7 @@ set -euo pipefail
 rm -f "$JSON" "$PID_FILE"
 mkdir -p "$(dirname "$JSON")"
 if [[ -n "$ENV_PAYLOAD" ]]; then
-  source <(base64 -d <<< "$ENV_PAYLOAD")
+  source <(base64 -d <<< "$ENV_PAYLOAD") >/dev/null
 fi
 cd "$WORKDIR"
 nohup "$VENV/bin/python" -m ipykernel_launcher -f "$JSON" >"$LOG" 2>&1 &

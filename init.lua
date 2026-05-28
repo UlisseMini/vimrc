@@ -261,14 +261,20 @@ require("lazy").setup({
 			})
 
 			vim.diagnostic.config({
-				virtual_text = true,
+				virtual_text = {
+					severity = vim.diagnostic.severity.ERROR,
+				},
 				severity_sort = true,
 				float = {
 					border = "rounded",
 					source = true,
 				},
-				signs = true,
-				underline = true,
+				signs = {
+					severity = vim.diagnostic.severity.ERROR,
+				},
+				underline = {
+					severity = vim.diagnostic.severity.ERROR,
+				},
 			})
 
 			vim.lsp.enable({
@@ -505,6 +511,10 @@ end, { silent = true })
 
 map("n", "<leader>:", function()
 	require("fzf-lua").command_history()
+end, { silent = true })
+
+map("n", "<leader>td", function()
+	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, { silent = true })
 
 map("n", "<leader>w", "<cmd>w<cr>", { silent = true })
